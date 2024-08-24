@@ -81,9 +81,6 @@ func (r *ProductService) EditProduct(ctx context.Context, role string, product d
 		return err
 	}
 	product.PriceId = newPriceId
-	//problem now is calculate total price of user , solution , we didnt have to store totalprice ,
-	//cause checkout use priceid and amount to calculate at create session
-	//or may be deletefromcart
 	return r.userRepo.EditItemFromSystem(ctx, product)
 }
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/price"
 	"github.com/stripe/stripe-go/v79/product"
@@ -18,10 +17,10 @@ import (
 )
 
 func createStripeProduct(item domain.Product) (string, error) {
-	env := godotenv.Load()
-	if env != nil {
-		return "", fmt.Errorf("fail to load env")
-	}
+	//env := godotenv.Load()
+	//if env != nil {
+	//	return "", fmt.Errorf("fail to load env")
+	//}
 	stripeKey := os.Getenv("STRIPEKEY")
 	stripe.Key = stripeKey
 	ProductParams := &stripe.ProductParams{Name: stripe.String(item.ProductName), Images: stripe.StringSlice(item.Images), Description: &item.Details}
@@ -33,10 +32,10 @@ func createStripeProduct(item domain.Product) (string, error) {
 }
 
 func createNewStripePrice(item domain.Product, stripeProductId string) (string, error) {
-	env := godotenv.Load()
-	if env != nil {
-		return "", fmt.Errorf("fail to load env")
-	}
+	////env := godotenv.Load()
+	////if env != nil {
+	////	return "", fmt.Errorf("fail to load env")
+	////}
 	stripeKey := os.Getenv("STRIPEKEY")
 	stripe.Key = stripeKey
 	PriceParams := &stripe.PriceParams{
@@ -54,17 +53,17 @@ func createNewStripePrice(item domain.Product, stripeProductId string) (string, 
 }
 func genTokenMongo(user string, id primitive.ObjectID, r *MongoUserRepo) (*domain.Token, error) {
 	var token domain.Token
-	env := godotenv.Load()
-	if env != nil {
-		log.Fatalf("err loading: %v", env)
-	} else {
-		fmt.Println("load complete!")
-	}
+	//env := godotenv.Load()
+	//if env != nil {
+	//	log.Fatalf("err loading: %v", env)
+	//} else {
+	//	fmt.Println("load complete!")
+	//}
 	accessKey := os.Getenv("PASS")
 	refreshKey := os.Getenv("REFRESHTOKEN")
-	if accessKey == "" {
-		fmt.Println("not setted!")
-	}
+	//if accessKey == "" {
+	//	fmt.Println("not setted!")
+	//}
 	exp := time.Now().Add(time.Hour * 1).Unix()
 	expRT := time.Now().Add(time.Hour * 1).Unix()
 	var role string

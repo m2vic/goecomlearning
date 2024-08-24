@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/webhook"
 )
@@ -310,7 +309,6 @@ func (h *UserHandler) Checkout(c *fiber.Ctx) error {
 		newList.ProductList = append(newList.ProductList, Product)
 	}
 	userId := c.Locals("userID").(string)
-	fmt.Println("handler:", userId)
 	result, err := h.checkoutService.Checkout(c.Context(), newList, userId, time.Now())
 	if err != nil {
 		return err
@@ -319,10 +317,10 @@ func (h *UserHandler) Checkout(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) StripeWebHook(c *fiber.Ctx) error {
-	env := godotenv.Load()
-	if env != nil {
-		fmt.Println("fail to load env")
-	}
+	//env := godotenv.Load()
+	//if env != nil {
+	//	fmt.Println("fail to load env")
+	//}
 	secret := os.Getenv("WEBHOOKENDPOINTSECRET")
 	endpointSecret := secret
 	payload := c.Body()

@@ -4,15 +4,13 @@ import (
 	"log"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/joho/godotenv"
 )
 
-func init() {
-	err := godotenv.Load("/Users/m2vic/Desktop/gosystem/cmd/.env")
-	if err != nil {
-		panic("Error loading .env file")
-	}
-}
+//func init() {
+//err := godotenv.Load("/Users/m2vic/Desktop/gosystem/cmd/.env")
+//	panic("Error loading .env file")
+//}
+//}
 
 func GetIdByToken(Token *jwt.Token) string {
 	claims := Token.Claims.(jwt.MapClaims)

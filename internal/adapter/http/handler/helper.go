@@ -11,16 +11,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
-	"github.com/joho/godotenv"
 	"gopkg.in/gomail.v2"
 )
-
-func init() {
-	err := godotenv.Load("/Users/m2vic/Desktop/gosystem/cmd/.env")
-	if err != nil {
-		panic("Error loading .env file")
-	}
-}
 
 func getRefresh(c *fiber.Ctx) string {
 	auth := c.Get("Refresh", "No-Token")
@@ -39,7 +31,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	claims := parsedToken.Claims.(jwt.MapClaims)
 	userID := claims["userid"].(string)
 	role := claims["role"].(string)
-	fmt.Println(role)
+
 	// Inject user info into the context
 	c.Locals("userID", userID)
 	c.Locals("role", role)
@@ -75,10 +67,10 @@ func Authenticate(Token interface{}) (*jwt.Token, error) {
 }
 
 func registerNotification(receiverEmail string) error {
-	env := godotenv.Load()
-	if env != nil {
-		fmt.Println("fail to load env")
-	}
+	//env := godotenv.Load()
+	//if env != nil {
+	//	fmt.Println("fail to load env")
+	//}
 	sender := os.Getenv("EMAILSENDER")
 	smtp := os.Getenv("SMTP")
 	smtpport := os.Getenv("SMTPPORT")
@@ -106,10 +98,10 @@ func registerNotification(receiverEmail string) error {
 }
 
 func resetPasswordEmail(receiverEmail, newPassword string) error {
-	env := godotenv.Load()
-	if env != nil {
-		fmt.Println("fail to load env")
-	}
+	//env := godotenv.Load()
+	//if env != nil {
+	//	fmt.Println("fail to load env")
+	//}
 	sender := os.Getenv("EMAILSENDER")
 	smtp := os.Getenv("SMTP")
 	smtpport := os.Getenv("SMTPPORT")

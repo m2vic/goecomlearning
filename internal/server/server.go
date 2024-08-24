@@ -11,7 +11,6 @@ import (
 func Start(userHandler *handler.UserHandler, productHandler *handler.ProductHandler) {
 	app := fiber.New()
 	app.Use(cors.New())
-	//app.Use(handler.AuthMiddleware)
 	routes.SetupRoutes(app, userHandler, productHandler)
 	app.Listen(":8080")
 }

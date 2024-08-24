@@ -35,13 +35,13 @@ func (s StripeService) CreateSession(req domain.ProductList, successUrl string) 
 		}
 		lineItems = append(lineItems, itemDetail)
 	}
-	fmt.Println(lineItems)
+
 	Sessionparams := &stripe.CheckoutSessionParams{
 		SuccessURL: stripe.String(successUrl),
 		LineItems:  lineItems,
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
 	}
-	//Sessionparams.AddExpand("line_items")
+
 	makeSession, err := session.New(Sessionparams)
 	if err != nil {
 		return nil, fmt.Errorf("session err:%w", err)

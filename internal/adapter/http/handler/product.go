@@ -154,6 +154,13 @@ func (h *ProductHandler) CheckAmount(c *fiber.Ctx) error {
 		fmt.Println(err)
 		return c.SendStatus(400)
 	}
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	err = validate.Struct(product)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			return c.Status(400).JSON(fiber.Map{"field": err.Field(), "error": fmt.Sprintf("Validation failed on '%s' tag", err.Tag())})
+		}
+	}
 	result, err := h.ProductService.CheckAmount(c.Context(), product.ProductId)
 	if err != nil {
 		fmt.Println(err)

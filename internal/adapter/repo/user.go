@@ -227,12 +227,9 @@ func (r *MongoUserRepo) GetCart(ctx context.Context, userId string) ([]domain.Ca
 
 }
 func (r *MongoUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, userId string) error {
-	//id, err := UserIdtoDoc(userId)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+
 	uid, _ := primitive.ObjectIDFromHex(userId)
-	//userProduct.TotalPrice = userProduct.PricePerPiece * float64(userProduct.Amount)
+
 	// Try to add the product to the cart if it doesn't already exist
 	filter := bson.M{"_id": uid, "cart.productid": bson.M{"$ne": userProduct.ProductId}}
 	update := bson.M{"$push": bson.M{"cart": userProduct}}
@@ -258,7 +255,6 @@ func (r *MongoUserRepo) DeleteItemInCart(ctx context.Context, userId string, pro
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(productId)
 	filter := bson.M{"_id": id}
 	update := bson.M{"$pull": bson.M{"cart": bson.M{"productid": productId}}}
 	_, err = r.col.UpdateOne(ctx, filter, update)

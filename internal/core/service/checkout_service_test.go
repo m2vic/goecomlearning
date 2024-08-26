@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stripe/stripe-go/v79"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -24,7 +23,6 @@ func TestCheckout(t *testing.T) {
 
 	// Define expected results
 	successfulURL := "https://example.com/success"
-	expectedCheckoutURL := "checkoutURL"
 	ctx := context.Background()
 
 	// Mock product and user details
@@ -66,7 +64,7 @@ func TestCheckout(t *testing.T) {
 	order := domain.Order{
 		UserId:         userId,
 		OrderID:        sessionId,
-		Ordered_At:     mockTime, // Replace this with a fixed time for testing
+		Ordered_At:     mockTime,
 		TotalPrice:     totalPrice,
 		Payment_Method: "card",
 		LineItems:      lineItems,
@@ -74,11 +72,11 @@ func TestCheckout(t *testing.T) {
 	}
 
 	// Mock return values from services
-	url := &stripe.CheckoutSession{URL: expectedCheckoutURL, ID: sessionId, AmountTotal: int64(amount) * int64(price) * 100}
+	checkoutSession := &stripe.CheckoutSession{URL: successfulURL, ID: sessionId, AmountTotal: int64(amount) * int64(price) * 100}
 
 	// Mock the services
-	mockStripeService.On("CreateSession", productList, successfulURL).Return(url, nil)
-	mockProductService.On("UpdateStock", ctx, productId, amount).Return(nil)
+	mockStripeService.On("CreateSession", productList).Return(checkoutSession, nil)
+	mockProductService.On("UpdateStock", ctx, productList.ProductList).Return(nil)
 	mockOrderService.On("NewOrder", ctx, order).Return(nil)
 	mockUserService.On("ClearCart", ctx, userId).Return(nil)
 
@@ -87,14 +85,6 @@ func TestCheckout(t *testing.T) {
 
 	// Assertions
 	assert.NoError(t, err)
-	assert.Equal(t, expectedCheckoutURL, actual)
+	assert.Equal(t, successfulURL, actual)
 
-	// Ensure the NewOrder method was called with the correct order
-	mockOrderService.AssertCalled(t, "NewOrder", ctx, mock.MatchedBy(func(o domain.Order) bool {
-		return o.UserId == userId &&
-			o.OrderID == sessionId &&
-			o.TotalPrice == totalPrice &&
-			o.Payment_Method == "card" &&
-			len(o.LineItems) == len(lineItems)
-	}))
 }

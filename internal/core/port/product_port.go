@@ -8,7 +8,7 @@ import (
 )
 
 type ProductService interface {
-	UpdateStock(ctx context.Context, productId primitive.ObjectID, amount int) error
+	UpdateStock(ctx context.Context, products []domain.StripeProduct) error
 	AddNewProduct(ctx context.Context, role string, product domain.Product) error
 	EditProduct(ctx context.Context, role string, product domain.Product) error
 	DeleteProduct(ctx context.Context, role string, product domain.Product) error
@@ -19,7 +19,7 @@ type ProductService interface {
 }
 
 type ProductRepo interface {
-	UpdateStock(ctx context.Context, productId primitive.ObjectID, amount int) error
+	UpdateStock(ctx context.Context, products []domain.StripeProduct) error
 	CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error)
 	AddNewProduct(ctx context.Context, product domain.Product) error
 	EditProduct(ctx context.Context, product domain.Product) (string, error)

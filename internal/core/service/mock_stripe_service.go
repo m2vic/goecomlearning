@@ -11,7 +11,7 @@ type MockStripeService struct {
 	mock.Mock
 }
 
-func (m *MockStripeService) CreateSession(req domain.ProductList, successUrl string) (*stripe.CheckoutSession, error) {
-	args := m.Called(req, successUrl)
+func (m *MockStripeService) CreateSession(req domain.ProductList) (*stripe.CheckoutSession, error) {
+	args := m.Called(req)
 	return args.Get(0).(*stripe.CheckoutSession), nil
 }

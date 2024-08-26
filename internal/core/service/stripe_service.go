@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"golearning/internal/core/domain"
+	"os"
 
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/checkout/session"
@@ -16,7 +17,8 @@ func NewStripeService(stripeKey string) *StripeService {
 	return &StripeService{StripeKey: stripeKey}
 }
 
-func (s StripeService) CreateSession(req domain.ProductList, successUrl string) (*stripe.CheckoutSession, error) {
+func (s StripeService) CreateSession(req domain.ProductList) (*stripe.CheckoutSession, error) {
+	url := os.Getenv("SUCCESSURL")
 	stripe.Key = s.StripeKey
 	list := req.ProductList
 	var lineItems []*stripe.CheckoutSessionLineItemParams
@@ -37,7 +39,7 @@ func (s StripeService) CreateSession(req domain.ProductList, successUrl string) 
 	}
 
 	Sessionparams := &stripe.CheckoutSessionParams{
-		SuccessURL: stripe.String(successUrl),
+		SuccessURL: stripe.String(url),
 		LineItems:  lineItems,
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
 	}

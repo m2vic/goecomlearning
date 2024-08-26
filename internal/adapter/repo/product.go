@@ -121,10 +121,15 @@ func (r *ProductRepo) CheckAmount(ctx context.Context, productId primitive.Objec
 
 }
 
-func (r *ProductRepo) UpdateStock(ctx context.Context, productId primitive.ObjectID, amount int) error {
-	filter := bson.M{"_id": productId}
-	update := bson.M{"$inc": bson.M{"stock": -amount}}
-	_, err := r.col.UpdateOne(ctx, filter, update)
+func (r *ProductRepo) UpdateStock(ctx context.Context, products []domain.StripeProduct) error {
+	operations := []mongo.WriteModel{}
+	for _, product := range products {
+		filter := bson.M{"_id": product.ProductId}
+		update := bson.M{"$inc": bson.M{"stock": -product.Amount}}
+		operation := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
+		operations = append(operations, operation)
+	}
+	_, err := r.col.BulkWrite(ctx, operations)
 	if err != nil {
 		return fmt.Errorf("Error:%w", err)
 	}

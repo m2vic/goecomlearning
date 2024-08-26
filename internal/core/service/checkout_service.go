@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"golearning/internal/core/domain"
 	"golearning/internal/core/port"
-	"os"
 	"time"
 
 	"github.com/stripe/stripe-go/v79"
@@ -23,17 +22,17 @@ func NewCheckoutService(OrderService port.OrderService, StripeService port.Strip
 }
 
 func (s *CheckoutService) Checkout(ctx context.Context, list domain.ProductList, userId string, now time.Time) (string, error) {
-	url := os.Getenv("SUCCESSURL")
-	session, err := s.StripeService.CreateSession(list, url)
+
+	session, err := s.StripeService.CreateSession(list)
 	if err != nil {
 		return "", err
 	}
-	for _, product := range list.ProductList {
-		err = s.ProductService.UpdateStock(ctx, product.ProductId, product.Amount)
-		if err != nil {
-			return "", err
-		}
+
+	err = s.ProductService.UpdateStock(ctx, list.ProductList)
+	if err != nil {
+		return "", err
 	}
+
 	/// where to get userId
 	err = s.UserService.ClearCart(ctx, userId)
 	if err != nil {

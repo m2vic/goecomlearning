@@ -109,6 +109,7 @@ func (r *ProductService) CheckAmount(ctx context.Context, productId primitive.Ob
 	return result, nil
 }
 
-func (r *ProductService) UpdateStock(ctx context.Context, productId primitive.ObjectID, amount int) error {
-	return r.productRepo.UpdateStock(ctx, productId, amount)
+func (r *ProductService) UpdateStock(ctx context.Context, products []domain.StripeProduct) error {
+	// we can optimize it []domain.product
+	return r.productRepo.UpdateStock(ctx, products)
 }

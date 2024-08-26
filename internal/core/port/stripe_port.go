@@ -7,5 +7,5 @@ import (
 )
 
 type StripeService interface {
-	CreateSession(req domain.ProductList, successUrl string) (*stripe.CheckoutSession, error)
+	CreateSession(req domain.ProductList) (*stripe.CheckoutSession, error)
 }

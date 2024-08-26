@@ -36,7 +36,7 @@ func (m *MockProductRepo) CheckAmount(ctx context.Context, productId primitive.O
 	amount := args.Int(0)
 	return &amount, nil
 }
-func (m *MockProductRepo) UpdateStock(ctx context.Context, productId primitive.ObjectID, amount int) error {
-	args := m.Called(ctx, productId, amount)
+func (m *MockProductRepo) UpdateStock(ctx context.Context, product []domain.StripeProduct) error {
+	args := m.Called(ctx, product)
 	return args.Error(0)
 }

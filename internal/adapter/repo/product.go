@@ -34,7 +34,7 @@ func (r *ProductRepo) GetAllProduct(ctx context.Context) ([]domain.Product, erro
 	}
 	defer cur.Close(ctx)
 
-	var products []domain.Product
+	products := []domain.Product{}
 
 	for cur.Next(ctx) {
 		var product domain.Product
@@ -51,7 +51,7 @@ func (r *ProductRepo) GetAllProduct(ctx context.Context) ([]domain.Product, erro
 	return products, nil
 }
 func (r *ProductRepo) GetProductById(ctx context.Context, productId primitive.ObjectID) (*domain.Product, error) {
-	var result domain.Product
+	result := domain.Product{}
 	filter := bson.M{"_id": productId}
 	err := r.col.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
@@ -102,7 +102,6 @@ func (r *ProductRepo) EditProduct(ctx context.Context, product domain.Product) (
 	return priceId, nil
 }
 func (r *ProductRepo) DeleteProduct(ctx context.Context, productId primitive.ObjectID) error {
-
 	filter := bson.M{"_id": productId}
 	_, err := r.col.DeleteOne(ctx, filter)
 	if err != nil {
@@ -110,14 +109,14 @@ func (r *ProductRepo) DeleteProduct(ctx context.Context, productId primitive.Obj
 	}
 	return nil
 }
-func (r *ProductRepo) CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error) {
-	var product domain.Product
+func (r *ProductRepo) CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error) {
+	product := domain.Product{}
 	filter := bson.M{"_id": productId}
 	err := r.col.FindOne(ctx, filter).Decode(&product)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return &product.Stock, nil
+	return product.Stock, nil
 
 }
 

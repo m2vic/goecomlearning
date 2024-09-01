@@ -31,7 +31,7 @@ func NewProductService(
 
 func (r *ProductService) GetAllProduct(ctx context.Context) ([]domain.Product, error) {
 
-	var result []domain.Product
+	result := []domain.Product{}
 	product, err := r.productCache.GetProduct(ctx)
 	if err != nil {
 		fmt.Println("No Cache!")
@@ -75,7 +75,6 @@ func (r *ProductService) EditProduct(ctx context.Context, role string, product d
 	if role != "admin" {
 		return fmt.Errorf("not Admin")
 	}
-	//*******(***)
 	newPriceId, err := r.productRepo.EditProduct(ctx, product)
 	if err != nil {
 		return err
@@ -85,7 +84,6 @@ func (r *ProductService) EditProduct(ctx context.Context, role string, product d
 }
 
 func (r *ProductService) DeleteProduct(ctx context.Context, role string, product domain.Product) error {
-
 	if role != "admin" {
 		return fmt.Errorf("not Admin")
 	}
@@ -101,10 +99,10 @@ func (r *ProductService) DeleteProduct(ctx context.Context, role string, product
 	return nil
 }
 
-func (r *ProductService) CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error) {
+func (r *ProductService) CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error) {
 	result, err := r.productRepo.CheckAmount(ctx, productId)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	return result, nil
 }

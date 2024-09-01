@@ -13,29 +13,45 @@ import (
 type UserService struct {
 	userRepo       port.UserRepo
 	ProductService port.ProductService
+	TokenGenerator port.TokenGenerator
+	PasswordHasher port.PasswordHasher
 }
 
-func NewUserService(userRepo port.UserRepo, productService port.ProductService) *UserService {
-	return &UserService{userRepo: userRepo, ProductService: productService}
+func NewUserService(userRepo port.UserRepo, productService port.ProductService, tokenGenerator port.TokenGenerator, passwordHasher port.PasswordHasher) *UserService {
+	return &UserService{userRepo: userRepo, ProductService: productService, TokenGenerator: tokenGenerator, PasswordHasher: passwordHasher}
 }
 
 func (s *UserService) Login(ctx context.Context, username, password string) (*domain.Token, error) {
-	login, err := s.userRepo.Login(ctx, username, password)
+	result, err := s.userRepo.CheckUsername(ctx, username)
 	if err != nil {
-		return nil, fmt.Errorf("from service:%w", err)
+		return nil, err
 	}
-	return login, nil
+	dbHashedPassword := result.Password
+	err = s.PasswordHasher.ComparePassword(ctx, password, dbHashedPassword)
+	if err != nil {
+		return nil, err
+	}
+	token, err := s.TokenGenerator.GenerateToken(ctx, result.Username, result.UserId)
+	if err != nil {
+		return nil, err
+	}
+	update := domain.User{UserId: result.UserId, Token: token.RefreshToken}
+	err = s.UpdateUser(ctx, update)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
 }
 
 func (s *UserService) Register(ctx context.Context, user domain.User) error {
 	username := user.Username
 	password := user.Password
 	email := user.Email
-	userExist, err := s.userRepo.CheckUsername(ctx, username)
+	result, err := s.userRepo.CheckUsername(ctx, username)
 	if err != nil {
 		return err
 	}
-	if userExist {
+	if result.Username == username {
 		return fmt.Errorf("user already exist")
 	}
 	emailExist, err := s.userRepo.CheckEmail(ctx, email)
@@ -45,8 +61,13 @@ func (s *UserService) Register(ctx context.Context, user domain.User) error {
 	if emailExist {
 		return fmt.Errorf("email already exist")
 	}
+
+	hash, err := s.PasswordHasher.HashPassword(ctx, password)
+	if err != nil {
+		return err
+	}
 	// have to check username and email
-	return s.userRepo.Register(ctx, username, password, email)
+	return s.userRepo.Register(ctx, username, email, hash)
 }
 
 func (s *UserService) GetUser(ctx context.Context, userId string) (*domain.User, error) {
@@ -54,9 +75,9 @@ func (s *UserService) GetUser(ctx context.Context, userId string) (*domain.User,
 	return s.userRepo.GetUser(ctx, userId)
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, info domain.User, userId string) error {
+func (s *UserService) UpdateUser(ctx context.Context, info domain.User) error {
 
-	return s.userRepo.UpdateUser(ctx, info, userId)
+	return s.userRepo.UpdateUser(ctx, info)
 }
 func (s *UserService) ChangePassword(ctx context.Context, userId, oldPass, newPass string) error {
 
@@ -71,13 +92,24 @@ func (s *UserService) ResetPassword(ctx context.Context, email string) (string, 
 	return s.userRepo.ResetPassword(ctx, email)
 
 }
-func (s *UserService) CheckRefresh(ctx context.Context, refreshtoken string) (*domain.Token, error) {
-	refresh, err := s.userRepo.CheckRefresh(ctx, refreshtoken)
+func (s *UserService) RefreshToken(ctx context.Context, refreshtoken string) (*domain.Token, error) {
+
+	result, err := s.userRepo.CheckRefresh(ctx, refreshtoken)
 	if err != nil {
 		return nil, err
 	}
-	return refresh, nil
+	tokens, err := s.TokenGenerator.GenerateToken(ctx, result.Username, result.UserId)
+	if err != nil {
+		return nil, err
+	}
+	//user := domain.User{UserId: result.UserId, Token: tokens.RefreshToken}
+	err = s.userRepo.UpdateUser(ctx, domain.User{UserId: result.UserId, Token: tokens.RefreshToken})
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
 }
+
 func (r *UserService) AddtoCart(ctx context.Context, Product domain.Cart, userId string) error {
 	productId := Product.ProductId
 	reqAmount := Product.Amount
@@ -85,7 +117,7 @@ func (r *UserService) AddtoCart(ctx context.Context, Product domain.Cart, userId
 	if err != nil {
 		return errors.New("no product found")
 	}
-	if reqAmount > *actualAmount {
+	if reqAmount > actualAmount {
 		return errors.New("not enough product in stock")
 	}
 	return r.userRepo.AddtoCart(ctx, Product, userId)
@@ -93,14 +125,14 @@ func (r *UserService) AddtoCart(ctx context.Context, Product domain.Cart, userId
 }
 func (r *UserService) GetCart(ctx context.Context, userId string) ([]domain.Cart, error) {
 	// have to check if sufficient and then compare
-	var newCart []domain.Cart
+	newCart := []domain.Cart{}
 	userCart, err := r.userRepo.GetCart(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 	for _, item := range userCart {
 		amount, err := r.ProductService.CheckAmount(ctx, item.ProductId)
-		if *amount >= item.Amount {
+		if amount >= item.Amount {
 			newCart = append(newCart, item)
 		}
 		if err != nil {

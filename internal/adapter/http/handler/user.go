@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/webhook"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserHandler struct {
@@ -28,7 +29,7 @@ func NewUserHandler(userService port.UserService, orderService port.OrderService
 }
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
-	var req dto.LoginRequest
+	req := dto.LoginRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return c.SendStatus(400)
@@ -54,7 +55,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	return c.JSON(token)
 }
 func (h *UserHandler) Register(c *fiber.Ctx) error {
-	var req dto.RegisterRequest
+	req := dto.RegisterRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return c.SendStatus(400)
@@ -100,7 +101,7 @@ func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	token, err := h.userService.CheckRefresh(ctx, refreshToken)
+	token, err := h.userService.RefreshToken(ctx, refreshToken)
 	if err != nil {
 		log.Println(err)
 		return c.SendString("Token invalid, Login again.")
@@ -113,8 +114,7 @@ func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-
-	var req dto.UpdateUserRequest
+	req := dto.UpdateUserRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return c.SendStatus(500)
@@ -126,13 +126,16 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 			return c.Status(400).JSON(fiber.Map{"field": err.Field(), "error": fmt.Sprintf("Validation failed on '%s' tag", err.Tag())})
 		}
 	}
-	info := domain.User{FirstName: req.FirstName,
+	userId := c.Locals("userID").(string)
+	id, _ := primitive.ObjectIDFromHex(userId)
+	info := domain.User{
+		UserId:         id,
+		FirstName:      req.FirstName,
 		LastName:       req.LastName,
 		AddressDetails: req.AddressDetails}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
-	err = h.userService.UpdateUser(ctx, info, userId)
+	err = h.userService.UpdateUser(ctx, info)
 	if err != nil {
 		return c.SendStatus(400)
 	}
@@ -141,7 +144,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 
-	var req dto.ChangePasswordRequest
+	req := dto.ChangePasswordRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return c.SendStatus(400)
@@ -166,7 +169,7 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
-	var req dto.EmailRequest
+	req := dto.EmailRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		c.SendStatus(400)
@@ -194,9 +197,7 @@ func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) AddToCart(c *fiber.Ctx) error {
-
-	// have to handle amount, req not more than actual amount of products
-	var req dto.Product
+	req := dto.Product{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		fmt.Println(err)
@@ -228,8 +229,7 @@ func (h *UserHandler) AddToCart(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 func (h *UserHandler) DeleteItemInCart(c *fiber.Ctx) error {
-
-	var req dto.DeleteItemInCartRequest
+	req := dto.DeleteItemInCartRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return fmt.Errorf("err:,%w", err)
@@ -245,8 +245,7 @@ func (h *UserHandler) DeleteItemInCart(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 func (h *UserHandler) IncreaseItemInCart(c *fiber.Ctx) error {
-
-	var req dto.IncreaseItemInCartRequest
+	req := dto.IncreaseItemInCartRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -262,8 +261,7 @@ func (h *UserHandler) IncreaseItemInCart(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 func (h *UserHandler) DecreaseItemInCart(c *fiber.Ctx) error {
-
-	var req dto.DecreaseItemInCartRequest
+	req := dto.DecreaseItemInCartRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -279,7 +277,6 @@ func (h *UserHandler) DecreaseItemInCart(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 func (h *UserHandler) GetCart(c *fiber.Ctx) error {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	userId := c.Locals("userID").(string)
@@ -290,7 +287,7 @@ func (h *UserHandler) GetCart(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 func (h *UserHandler) Checkout(c *fiber.Ctx) error {
-	var list dto.CheckoutRequest
+	list := dto.CheckoutRequest{}
 	err := c.BodyParser(&list)
 	if err != nil {
 		return err
@@ -302,7 +299,7 @@ func (h *UserHandler) Checkout(c *fiber.Ctx) error {
 			return c.Status(400).JSON(fiber.Map{"field": err.Field(), "error": fmt.Sprintf("Validation failed on '%s' tag", err.Tag())})
 		}
 	}
-	var newList domain.ProductList
+	newList := domain.ProductList{}
 	for _, item := range list.Product {
 		Product := domain.StripeProduct{ProductId: item.ProductId,
 			ProductName: item.ProductName, Images: item.Images, Details: item.Details, Amount: item.Amount, PricePerPiece: item.PricePerPiece, PriceId: item.PriceId}
@@ -317,10 +314,6 @@ func (h *UserHandler) Checkout(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) StripeWebHook(c *fiber.Ctx) error {
-	//env := godotenv.Load()
-	//if env != nil {
-	//	fmt.Println("fail to load env")
-	//}
 	secret := os.Getenv("WEBHOOKENDPOINTSECRET")
 	endpointSecret := secret
 	payload := c.Body()

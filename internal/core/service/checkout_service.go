@@ -54,8 +54,8 @@ func (s *CheckoutService) Checkout(ctx context.Context, list domain.ProductList,
 
 func MapToOrders(list []domain.StripeProduct, userId string, session *stripe.CheckoutSession, now time.Time) (domain.Order, error) {
 
-	var arrOfProductDetails []domain.ProductDetails
-	var ProductDetails domain.ProductDetails
+	arrOfProductDetails := []domain.ProductDetails{}
+	ProductDetails := domain.ProductDetails{}
 
 	for _, item := range list {
 		ProductDetails.Quantity = item.Amount
@@ -66,7 +66,7 @@ func MapToOrders(list []domain.StripeProduct, userId string, session *stripe.Che
 		arrOfProductDetails = append(arrOfProductDetails, ProductDetails)
 	}
 
-	var order domain.Order
+	order := domain.Order{}
 	order.UserId = userId
 	order.OrderID = session.ID
 	order.Ordered_At = now

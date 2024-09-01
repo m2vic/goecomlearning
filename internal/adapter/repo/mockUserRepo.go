@@ -16,25 +16,22 @@ func (m *MockUserRepo) GetUser(ctx context.Context, userId string) (*domain.User
 	args := m.Called(ctx, userId)
 	return args.Get(0).(*domain.User), nil
 }
-func (m *MockUserRepo) Login(ctx context.Context, username, password string) (*domain.Token, error) {
-	args := m.Called(ctx, username, password)
-	return args.Get(0).(*domain.Token), nil
-}
-func (m *MockUserRepo) Register(ctx context.Context, username, password, email string) error {
-	args := m.Called(ctx, username, password, email)
+
+func (m *MockUserRepo) Register(ctx context.Context, username, email string, password []byte) error {
+	args := m.Called(ctx, username, email, password)
 	return args.Error(0)
 }
-func (m *MockUserRepo) UpdateUser(ctx context.Context, info domain.User, id string) error {
-	args := m.Called(ctx, info, id)
+func (m *MockUserRepo) UpdateUser(ctx context.Context, info domain.User) error {
+	args := m.Called(ctx, info)
 	return args.Error(0)
 }
 func (m *MockUserRepo) CheckEmail(ctx context.Context, email string) (bool, error) {
 	args := m.Called(ctx, email)
 	return args.Bool(0), nil
 }
-func (m *MockUserRepo) CheckUsername(ctx context.Context, username string) (bool, error) {
+func (m *MockUserRepo) CheckUsername(ctx context.Context, username string) (*domain.User, error) {
 	args := m.Called(ctx, username)
-	return args.Bool(0), nil
+	return args.Get(0).(*domain.User), nil
 }
 
 func (m *MockUserRepo) ResetPassword(ctx context.Context, email string) (string, error) {
@@ -45,9 +42,9 @@ func (m *MockUserRepo) ChangePassword(ctx context.Context, userId, oldPassword, 
 	args := m.Called(ctx, userId, oldPassword, newPassword)
 	return args.Error(0)
 }
-func (m *MockUserRepo) CheckRefresh(ctx context.Context, token string) (*domain.Token, error) {
+func (m *MockUserRepo) CheckRefresh(ctx context.Context, token string) (*domain.User, error) {
 	args := m.Called(ctx, token)
-	return args.Get(0).(*domain.Token), nil
+	return args.Get(0).(*domain.User), nil
 }
 func (m *MockUserRepo) GetCart(ctx context.Context, userId string) ([]domain.Cart, error) {
 	args := m.Called(ctx, userId)

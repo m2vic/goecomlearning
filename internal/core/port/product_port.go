@@ -14,13 +14,13 @@ type ProductService interface {
 	DeleteProduct(ctx context.Context, role string, product domain.Product) error
 	GetAllProduct(context.Context) ([]domain.Product, error)
 	GetProductById(ctx context.Context, productId string) (*domain.Product, error)
-	CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error)
+	CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error)
 	//ProductCategory(domain.Product) ([]domain.ProductList, error)
 }
 
 type ProductRepo interface {
 	UpdateStock(ctx context.Context, products []domain.StripeProduct) error
-	CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error)
+	CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error)
 	AddNewProduct(ctx context.Context, product domain.Product) error
 	EditProduct(ctx context.Context, product domain.Product) (string, error)
 	DeleteProduct(ctx context.Context, productId primitive.ObjectID) error

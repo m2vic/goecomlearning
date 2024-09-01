@@ -25,7 +25,6 @@ func NewOrderRepo(client *mongo.Client, dbName string, colName string) *OrderRep
 }
 
 func (r *OrderRepo) NewOrder(ctx context.Context, order domain.Order) error {
-	fmt.Println(order)
 	_, err := r.col.InsertOne(ctx, order)
 	if err != nil {
 		return fmt.Errorf("from db:%w", err)
@@ -34,7 +33,7 @@ func (r *OrderRepo) NewOrder(ctx context.Context, order domain.Order) error {
 }
 
 func (r *OrderRepo) GetOrder(ctx context.Context, userId string) ([]domain.Order, error) {
-	var orders []domain.Order
+	orders := []domain.Order{}
 	filter := bson.M{"userid": userId}
 	//have  handle many orderctx context.Context,
 	cur, err := r.col.Find(ctx, filter)
@@ -46,7 +45,7 @@ func (r *OrderRepo) GetOrder(ctx context.Context, userId string) ([]domain.Order
 		}
 	}
 	for cur.Next(context.Background()) {
-		var order domain.Order
+		order := domain.Order{}
 		err := cur.Decode(&order)
 		if err != nil {
 			return nil, errors.New("fail to map orders")

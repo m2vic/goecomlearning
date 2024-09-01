@@ -21,7 +21,7 @@ func NewProductHandler(productService service.ProductService) *ProductHandler {
 }
 
 func (h *ProductHandler) AddNewProduct(c *fiber.Ctx) error {
-	var productreq dto.ProductRequest
+	productreq := dto.ProductRequest{}
 	if err := c.BodyParser(&productreq); err != nil {
 		fmt.Println("Error parsing body:", err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
@@ -130,7 +130,7 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 }
 func (h *ProductHandler) DeleteProduct(c *fiber.Ctx) error {
 	role := c.Locals("role").(string)
-	var product domain.Product
+	product := domain.Product{}
 	err := c.BodyParser(&product)
 	if err != nil {
 		fmt.Println(err)
@@ -148,7 +148,7 @@ func (h *ProductHandler) DeleteProduct(c *fiber.Ctx) error {
 }
 
 func (h *ProductHandler) CheckAmount(c *fiber.Ctx) error {
-	var product dto.Product
+	product := dto.Product{}
 	err := c.BodyParser(&product)
 	if err != nil {
 		fmt.Println(err)

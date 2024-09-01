@@ -21,7 +21,7 @@ func (s StripeService) CreateSession(req domain.ProductList) (*stripe.CheckoutSe
 	url := os.Getenv("SUCCESSURL")
 	stripe.Key = s.StripeKey
 	list := req.ProductList
-	var lineItems []*stripe.CheckoutSessionLineItemParams
+	lineItems := []*stripe.CheckoutSessionLineItemParams{}
 	for i := 0; i < len(list); i++ {
 		itemDetail := &stripe.CheckoutSessionLineItemParams{
 			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{

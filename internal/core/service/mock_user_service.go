@@ -24,8 +24,8 @@ func (m *MockUserService) Register(ctx context.Context, info domain.User) error 
 	args := m.Called(ctx, info)
 	return args.Error(0)
 }
-func (m *MockUserService) UpdateUser(ctx context.Context, user domain.User, token string) error {
-	args := m.Called(ctx, user, token)
+func (m *MockUserService) UpdateUser(ctx context.Context, user domain.User) error {
+	args := m.Called(ctx, user)
 	return args.Error(0)
 }
 func (m *MockUserService) ChangePassword(ctx context.Context, userId, oldPassword, newPassword string) error {
@@ -36,7 +36,7 @@ func (m *MockUserService) ResetPassword(ctx context.Context, email string) (stri
 	args := m.Called(ctx, email)
 	return args.String(0), nil
 }
-func (m *MockUserService) CheckRefresh(ctx context.Context, token string) (*domain.Token, error) {
+func (m *MockUserService) RefreshToken(ctx context.Context, token string) (*domain.Token, error) {
 	args := m.Called(ctx, token)
 	return args.Get(0).(*domain.Token), nil
 }
@@ -63,4 +63,8 @@ func (m *MockUserService) DeleteItemInCart(ctx context.Context, userId string, p
 func (m *MockUserService) ClearCart(ctx context.Context, userId string) error {
 	args := m.Called(ctx, userId)
 	return args.Error(0)
+}
+func (m *MockUserService) GenerateToken(ctx context.Context, username string, id primitive.ObjectID) (*domain.Token, error) {
+	args := m.Called(ctx, username, id)
+	return args.Get(0).(*domain.Token), nil
 }

@@ -31,10 +31,10 @@ func (m *MockProductRepo) GetProductById(ctx context.Context, productId primitiv
 	args := m.Called(ctx, productId)
 	return args.Get(0).(*domain.Product), nil
 }
-func (m *MockProductRepo) CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error) {
+func (m *MockProductRepo) CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error) {
 	args := m.Called(ctx, productId)
 	amount := args.Int(0)
-	return &amount, nil
+	return amount, nil
 }
 func (m *MockProductRepo) UpdateStock(ctx context.Context, product []domain.StripeProduct) error {
 	args := m.Called(ctx, product)

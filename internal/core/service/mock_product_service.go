@@ -34,10 +34,10 @@ func (m *MockProductService) GetProductById(ctx context.Context, productId strin
 	return &product, nil
 }
 
-func (m *MockProductService) CheckAmount(ctx context.Context, productId primitive.ObjectID) (*int, error) {
+func (m *MockProductService) CheckAmount(ctx context.Context, productId primitive.ObjectID) (int, error) {
 	args := m.Called(ctx, productId)
 	amount := args.Int(0)
-	return &amount, nil
+	return amount, nil
 }
 
 func (m *MockProductService) UpdateStock(ctx context.Context, product []domain.StripeProduct) error {

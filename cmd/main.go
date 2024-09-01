@@ -61,7 +61,9 @@ func main() {
 
 	productCache := repo.NewProductCache(redisClient)
 	productService := service.NewProductService(productRepo, productCache, userRepo)
-	userService := service.NewUserService(userRepo, productService)
+	tokenGenerator := service.TokenGenerator{}
+	passwordHasher := service.PasswordHasher{}
+	userService := service.NewUserService(userRepo, productService, &tokenGenerator, &passwordHasher)
 	checkoutService := service.NewCheckoutService(orderService, *stripeService, productService, userService)
 	userHandler := handler.NewUserHandler(userService, orderService, checkoutService)
 	productHandler := handler.NewProductHandler(*productService)

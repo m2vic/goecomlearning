@@ -12,6 +12,9 @@ type MockPasswordHasher struct {
 
 func (m *MockPasswordHasher) ComparePassword(ctx context.Context, password, hash string) error {
 	args := m.Called(ctx, password, hash)
+	if args.Get(0) == nil {
+		return args.Error(0)
+	}
 	return args.Error(0)
 }
 

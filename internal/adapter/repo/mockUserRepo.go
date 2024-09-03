@@ -12,7 +12,7 @@ type MockUserRepo struct {
 	mock.Mock
 }
 
-func (m *MockUserRepo) GetUser(ctx context.Context, userId string) (*domain.User, error) {
+func (m *MockUserRepo) GetUser(ctx context.Context, userId primitive.ObjectID) (*domain.User, error) {
 	args := m.Called(ctx, userId)
 	return args.Get(0).(*domain.User), nil
 }
@@ -31,6 +31,9 @@ func (m *MockUserRepo) CheckEmail(ctx context.Context, email string) (bool, erro
 }
 func (m *MockUserRepo) CheckUsername(ctx context.Context, username string) (*domain.User, error) {
 	args := m.Called(ctx, username)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*domain.User), nil
 }
 
@@ -38,31 +41,31 @@ func (m *MockUserRepo) ResetPassword(ctx context.Context, email string) (string,
 	args := m.Called(ctx, email)
 	return args.String(0), nil
 }
-func (m *MockUserRepo) ChangePassword(ctx context.Context, userId, oldPassword, newPassword string) error {
-	args := m.Called(ctx, userId, oldPassword, newPassword)
+func (m *MockUserRepo) ChangePassword(ctx context.Context, userId primitive.ObjectID, newPassword string) error {
+	args := m.Called(ctx, userId, newPassword)
 	return args.Error(0)
 }
 func (m *MockUserRepo) CheckRefresh(ctx context.Context, token string) (*domain.User, error) {
 	args := m.Called(ctx, token)
 	return args.Get(0).(*domain.User), nil
 }
-func (m *MockUserRepo) GetCart(ctx context.Context, userId string) ([]domain.Cart, error) {
+func (m *MockUserRepo) GetCart(ctx context.Context, userId primitive.ObjectID) ([]domain.Cart, error) {
 	args := m.Called(ctx, userId)
 	return args.Get(0).([]domain.Cart), nil
 }
-func (m *MockUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, userId string) error {
+func (m *MockUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, userId primitive.ObjectID) error {
 	args := m.Called(ctx, userProduct, userId)
 	return args.Error(0)
 }
-func (m *MockUserRepo) IncreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
+func (m *MockUserRepo) IncreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, productId)
 	return args.Error(0)
 }
-func (m *MockUserRepo) DecreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
+func (m *MockUserRepo) DecreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, productId)
 	return args.Error(0)
 }
-func (m *MockUserRepo) DeleteItemInCart(ctx context.Context, userId string, ProductId primitive.ObjectID) error {
+func (m *MockUserRepo) DeleteItemInCart(ctx context.Context, userId primitive.ObjectID, ProductId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, ProductId)
 	return args.Error(0)
 }
@@ -74,7 +77,11 @@ func (m *MockUserRepo) EditItemFromSystem(ctx context.Context, product domain.Pr
 	args := m.Called(ctx, product)
 	return args.Error(0)
 }
-func (m *MockUserRepo) ClearCart(ctx context.Context, userId string) error {
+func (m *MockUserRepo) ClearCart(ctx context.Context, userId primitive.ObjectID) error {
 	args := m.Called(ctx, userId)
+	return args.Error(0)
+}
+func (m *MockUserRepo) CheckPassword(ctx context.Context, oldPass string) error {
+	args := m.Called(ctx, oldPass)
 	return args.Error(0)
 }

@@ -12,7 +12,7 @@ type MockUserService struct {
 	mock.Mock
 }
 
-func (m *MockUserService) GetUser(ctx context.Context, userId string) (*domain.User, error) {
+func (m *MockUserService) GetUser(ctx context.Context, userId primitive.ObjectID) (*domain.User, error) {
 	args := m.Called(ctx, userId)
 	return args.Get(0).(*domain.User), nil
 }
@@ -28,7 +28,7 @@ func (m *MockUserService) UpdateUser(ctx context.Context, user domain.User) erro
 	args := m.Called(ctx, user)
 	return args.Error(0)
 }
-func (m *MockUserService) ChangePassword(ctx context.Context, userId, oldPassword, newPassword string) error {
+func (m *MockUserService) ChangePassword(ctx context.Context, userId primitive.ObjectID, oldPassword, newPassword string) error {
 	args := m.Called(ctx, userId, oldPassword, newPassword)
 	return args.Error(0)
 }
@@ -40,27 +40,27 @@ func (m *MockUserService) RefreshToken(ctx context.Context, token string) (*doma
 	args := m.Called(ctx, token)
 	return args.Get(0).(*domain.Token), nil
 }
-func (m *MockUserService) GetCart(ctx context.Context, userId string) ([]domain.Cart, error) {
+func (m *MockUserService) GetCart(ctx context.Context, userId primitive.ObjectID) ([]domain.Cart, error) {
 	args := m.Called(ctx, userId)
 	return args.Get(0).([]domain.Cart), nil
 }
-func (m *MockUserService) AddtoCart(ctx context.Context, userProduct domain.Cart, userId string) error {
+func (m *MockUserService) AddtoCart(ctx context.Context, userProduct domain.Cart, userId primitive.ObjectID) error {
 	args := m.Called(ctx, userProduct, userId)
 	return args.Error(0)
 }
-func (m *MockUserService) IncreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
+func (m *MockUserService) IncreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, productId)
 	return args.Error(0)
 }
-func (m *MockUserService) DecreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
+func (m *MockUserService) DecreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, productId)
 	return args.Error(0)
 }
-func (m *MockUserService) DeleteItemInCart(ctx context.Context, userId string, productId primitive.ObjectID) error {
+func (m *MockUserService) DeleteItemInCart(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
 	args := m.Called(ctx, userId, productId)
 	return args.Error(0)
 }
-func (m *MockUserService) ClearCart(ctx context.Context, userId string) error {
+func (m *MockUserService) ClearCart(ctx context.Context, userId primitive.ObjectID) error {
 	args := m.Called(ctx, userId)
 	return args.Error(0)
 }

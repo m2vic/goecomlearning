@@ -30,7 +30,7 @@ func TestCheckout(t *testing.T) {
 	productId, _ := primitive.ObjectIDFromHex("1")
 	productName := "test"
 	amount := 2
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	sessionId := "1"
 	details := "test"
 	price := float64(122)

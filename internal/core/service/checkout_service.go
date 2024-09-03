@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stripe/stripe-go/v79"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CheckoutService struct {
@@ -21,7 +22,7 @@ func NewCheckoutService(OrderService port.OrderService, StripeService port.Strip
 	return &CheckoutService{OrderService: OrderService, StripeService: StripeService, ProductService: productService, UserService: UserService}
 }
 
-func (s *CheckoutService) Checkout(ctx context.Context, list domain.ProductList, userId string, now time.Time) (string, error) {
+func (s *CheckoutService) Checkout(ctx context.Context, list domain.ProductList, userId primitive.ObjectID, now time.Time) (string, error) {
 
 	session, err := s.StripeService.CreateSession(list)
 	if err != nil {
@@ -52,7 +53,7 @@ func (s *CheckoutService) Checkout(ctx context.Context, list domain.ProductList,
 	return session.URL, nil
 }
 
-func MapToOrders(list []domain.StripeProduct, userId string, session *stripe.CheckoutSession, now time.Time) (domain.Order, error) {
+func MapToOrders(list []domain.StripeProduct, userId primitive.ObjectID, session *stripe.CheckoutSession, now time.Time) (domain.Order, error) {
 
 	arrOfProductDetails := []domain.ProductDetails{}
 	ProductDetails := domain.ProductDetails{}

@@ -88,7 +88,8 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	defer cancel()
 
 	userId := c.Locals("userID").(string)
-	data, err := h.userService.GetUser(ctx, userId)
+	id, _ := primitive.ObjectIDFromHex(userId)
+	data, err := h.userService.GetUser(ctx, id)
 	if err != nil {
 		c.SendStatus(500)
 	}
@@ -160,7 +161,8 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 	oldPassword := req.OldPassword
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	err = h.userService.ChangePassword(ctx, userId, oldPassword, newPassword)
 	if err != nil {
 		fmt.Println(err)
@@ -221,7 +223,8 @@ func (h *UserHandler) AddToCart(c *fiber.Ctx) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	err = h.userService.AddtoCart(ctx, product, userId)
 	if err != nil {
 		return c.Status(400).SendString("Not Enough Product In Stock")
@@ -237,7 +240,8 @@ func (h *UserHandler) DeleteItemInCart(c *fiber.Ctx) error {
 	productId := req.Product.ProductId
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	err = h.userService.DeleteItemInCart(ctx, userId, productId)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -253,7 +257,8 @@ func (h *UserHandler) IncreaseItemInCart(c *fiber.Ctx) error {
 	productId := req.Product.ProductId
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	err = h.userService.IncreaseCartProduct(ctx, userId, productId)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -269,7 +274,8 @@ func (h *UserHandler) DecreaseItemInCart(c *fiber.Ctx) error {
 	productId := req.Product.ProductId
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	err = h.userService.DecreaseCartProduct(ctx, userId, productId)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -279,7 +285,8 @@ func (h *UserHandler) DecreaseItemInCart(c *fiber.Ctx) error {
 func (h *UserHandler) GetCart(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	result, err := h.userService.GetCart(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("err:%w", err)
@@ -305,7 +312,8 @@ func (h *UserHandler) Checkout(c *fiber.Ctx) error {
 			ProductName: item.ProductName, Images: item.Images, Details: item.Details, Amount: item.Amount, PricePerPiece: item.PricePerPiece, PriceId: item.PriceId}
 		newList.ProductList = append(newList.ProductList, Product)
 	}
-	userId := c.Locals("userID").(string)
+	id := c.Locals("userID").(string)
+	userId, _ := primitive.ObjectIDFromHex(id)
 	result, err := h.checkoutService.Checkout(c.Context(), newList, userId, time.Now())
 	if err != nil {
 		return err

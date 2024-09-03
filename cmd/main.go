@@ -63,7 +63,8 @@ func main() {
 	productService := service.NewProductService(productRepo, productCache, userRepo)
 	tokenGenerator := service.TokenGenerator{}
 	passwordHasher := service.PasswordHasher{}
-	userService := service.NewUserService(userRepo, productService, &tokenGenerator, &passwordHasher)
+	passwordGenerator := service.PasswordGenerator{}
+	userService := service.NewUserService(userRepo, productService, &tokenGenerator, &passwordHasher, &passwordGenerator)
 	checkoutService := service.NewCheckoutService(orderService, *stripeService, productService, userService)
 	userHandler := handler.NewUserHandler(userService, orderService, checkoutService)
 	productHandler := handler.NewProductHandler(*productService)

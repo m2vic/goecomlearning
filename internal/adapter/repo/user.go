@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"golearning/internal/core/domain"
+	errs "golearning/internal/error"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,20 +23,17 @@ type MongoUserRepo struct {
 
 func NewMongoRepo(client *mongo.Client, dbName string, colName string) *MongoUserRepo {
 	if client == nil {
-		fmt.Println("missing db")
+		fmt.Println(errs.DatabaseNotFound)
 		return nil
 	}
 	col := client.Database(dbName).Collection(colName)
 	return &MongoUserRepo{client: client, col: col}
 }
-func (r *MongoUserRepo) GetUser(ctx context.Context, userId string) (*domain.User, error) {
+func (r *MongoUserRepo) GetUser(ctx context.Context, userId primitive.ObjectID) (*domain.User, error) {
 	result := domain.User{}
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, fmt.Errorf("fail to convert to primitive:%w", err)
-	}
-	filter := bson.M{"_id": id}
-	err = r.col.FindOne(ctx, filter).Decode(&result)
+
+	filter := bson.M{"_id": userId}
+	err := r.col.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("not found")
@@ -88,36 +86,24 @@ func (r *MongoUserRepo) UpdateUser(ctx context.Context, info domain.User) error 
 	}
 	return nil
 }
-func (r *MongoUserRepo) ChangePassword(ctx context.Context, userId, oldPass, newPass string) error {
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (r *MongoUserRepo) CheckPassword(ctx context.Context, password string) error {
 	result := domain.User{}
-	filter := bson.M{"_id": id}
-	err = r.col.FindOne(ctx, filter).Decode(&result)
+	filter := bson.M{"password": password}
+	err := r.col.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return fmt.Errorf("from repo layer:%w", err)
-		} else {
-			log.Fatal(err)
+			return err
 		}
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(oldPass))
+	return nil
+}
+func (r *MongoUserRepo) ChangePassword(ctx context.Context, userId primitive.ObjectID, newPass string) error {
+	filter := bson.M{"_id": userId}
+	update := bson.M{"$set": bson.M{"password": string(newPass)}}
+	_, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return fmt.Errorf("password invalid from repo layer:%w", err)
+		return err
 	}
-	password, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println("afterGen:", password)
-	update := bson.M{"$set": bson.M{"password": string(password)}}
-	_, err = r.col.UpdateOne(context.Background(), filter, update)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return nil
 }
 func (r *MongoUserRepo) CheckEmail(ctx context.Context, email string) (bool, error) {
@@ -133,7 +119,7 @@ func (r *MongoUserRepo) CheckEmail(ctx context.Context, email string) (bool, err
 	}
 	return true, nil
 }
-func (r *MongoUserRepo) ResetPassword(ctx context.Context, email string) (string, error) {
+func (r *MongoUserRepo) ResetPassword(ctx context.Context, email, randomPassword string) (string, error) {
 	filter := bson.M{"email": email}
 	// Generate Password
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
@@ -170,27 +156,23 @@ func (r *MongoUserRepo) CheckRefresh(ctx context.Context, Token string) (*domain
 	}
 	return &result, nil
 }
-func (r *MongoUserRepo) GetCart(ctx context.Context, userId string) ([]domain.Cart, error) {
+func (r *MongoUserRepo) GetCart(ctx context.Context, userId primitive.ObjectID) ([]domain.Cart, error) {
 	var result struct {
 		Cart []domain.Cart `bson:"cart"`
 	}
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, fmt.Errorf("from repo:%w", err)
-	}
-	filter := bson.M{"_id": id}
+
+	filter := bson.M{"_id": userId}
 	projection := bson.M{"cart": 1}
-	err = r.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result)
+	err := r.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("databse:%w", err)
+		return nil, err
 	}
 	return result.Cart, nil
 
 }
-func (r *MongoUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, userId string) error {
-	uid, _ := primitive.ObjectIDFromHex(userId)
+func (r *MongoUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, userId primitive.ObjectID) error {
 	// Try to add the product to the cart if it doesn't already exist
-	filter := bson.M{"_id": uid, "cart.productid": bson.M{"$ne": userProduct.ProductId}}
+	filter := bson.M{"_id": userId, "cart.productid": bson.M{"$ne": userProduct.ProductId}}
 	update := bson.M{"$push": bson.M{"cart": userProduct}}
 	result, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -199,7 +181,7 @@ func (r *MongoUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, 
 
 	// If no document was modified, it means the product is already in the cart
 	if result.ModifiedCount == 0 {
-		filter = bson.M{"_id": uid, "cart.productid": userProduct.ProductId}
+		filter = bson.M{"_id": userId, "cart.productid": userProduct.ProductId}
 		update = bson.M{"$inc": bson.M{"cart.$.amount": userProduct.Amount, "cart.$.totalprice": userProduct.PricePerPiece}}
 		_, err = r.col.UpdateOne(context.TODO(), filter, update)
 		if err != nil {
@@ -208,14 +190,11 @@ func (r *MongoUserRepo) AddtoCart(ctx context.Context, userProduct domain.Cart, 
 	}
 	return nil
 }
-func (r *MongoUserRepo) DeleteItemInCart(ctx context.Context, userId string, productId primitive.ObjectID) error {
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (r *MongoUserRepo) DeleteItemInCart(ctx context.Context, id primitive.ObjectID, productId primitive.ObjectID) error {
+
 	filter := bson.M{"_id": id}
 	update := bson.M{"$pull": bson.M{"cart": bson.M{"productid": productId}}}
-	_, err = r.col.UpdateOne(ctx, filter, update)
+	_, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -247,40 +226,31 @@ func (r *MongoUserRepo) EditItemFromSystem(ctx context.Context, product domain.P
 	}
 	return nil
 }
-func (r *MongoUserRepo) IncreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return err
-	}
-	filter := bson.M{"_id": id, "cart.productid": productId}
+func (r *MongoUserRepo) IncreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
+
+	filter := bson.M{"_id": userId, "cart.productid": productId}
 	update := bson.M{"$inc": bson.M{"cart.$.amount": 1}}
-	_, err = r.col.UpdateOne(ctx, filter, update)
+	_, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (r *MongoUserRepo) DecreaseCartProduct(ctx context.Context, userId string, productId primitive.ObjectID) error {
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return err
-	}
-	filter := bson.M{"_id": id, "cart.productid": productId}
+func (r *MongoUserRepo) DecreaseCartProduct(ctx context.Context, userId primitive.ObjectID, productId primitive.ObjectID) error {
+
+	filter := bson.M{"_id": userId, "cart.productid": productId}
 	update := bson.M{"$inc": bson.M{"cart.$.amount": -1}}
-	_, err = r.col.UpdateOne(ctx, filter, update)
+	_, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (r *MongoUserRepo) ClearCart(ctx context.Context, userId string) error {
-	id, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return fmt.Errorf("fail to parse primitiveId:%w", err)
-	}
-	filter := bson.M{"_id": id}
+func (r *MongoUserRepo) ClearCart(ctx context.Context, userId primitive.ObjectID) error {
+
+	filter := bson.M{"_id": userId}
 	update := bson.M{"$set": bson.M{"cart": bson.A{}}}
-	_, err = r.col.UpdateOne(ctx, filter, update)
+	_, err := r.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("from repo:%w", err)
 	}

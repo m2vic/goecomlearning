@@ -5,6 +5,7 @@ import (
 	"golearning/internal/adapter/repo"
 	"golearning/internal/core/domain"
 	"golearning/internal/core/service"
+	errs "golearning/internal/error"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,7 @@ func TestGetUser(t *testing.T) {
 
 	expected := &domain.User{FirstName: "BOB", LastName: "CALLAWAY"}
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	userRepo.On("GetUser", ctx, userId).Return(expected)
 
 	actual, err := userService.GetUser(ctx, userId)
@@ -32,29 +33,59 @@ func TestGetUser(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 func TestLogin(t *testing.T) {
-	userRepo := new(repo.MockUserRepo)
-	productCached := new(repo.MockProductCached)
-	productRepo := new(repo.MockProductRepo)
-	productService := service.NewProductService(productRepo, productCached, userRepo)
-	tokenGenerator := new(service.MockTokenGenerator)
-	passwordHasher := new(service.MockPasswordHasher)
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
 
-	expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
-	ctx := context.Background()
-	username := "123"
-	password := "123"
-	id, _ := primitive.ObjectIDFromHex("1")
-	user := &domain.User{Username: username, Password: password, UserId: id}
-	userRepo.On("CheckUsername", ctx, username).Return(user)
-	tokenGenerator.On("GenerateToken", ctx, username, user.UserId).Return(expected)
-	passwordHasher.On("ComparePassword", ctx, password, password).Return(nil)
-	userRepo.On("UpdateUser", ctx, domain.User{UserId: id, Token: expected.RefreshToken}).Return(nil)
+	type testcase struct {
+		username    string
+		password    string
+		expected    *domain.Token
+		expectedErr string
+	}
+	testcases := []testcase{{username: "123", password: "123", expected: &domain.Token{AccessToken: "access", RefreshToken: "refresh"}, expectedErr: ""},
+		{username: "wrong", password: "right", expected: nil, expectedErr: "username"},
+		{username: "right", password: "wrong", expected: nil, expectedErr: "password"},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.username, func(t *testing.T) {
 
-	actual, err := userService.Login(ctx, username, password)
+			userRepo := new(repo.MockUserRepo)
+			productCached := new(repo.MockProductCached)
+			productRepo := new(repo.MockProductRepo)
+			productService := service.NewProductService(productRepo, productCached, userRepo)
+			tokenGenerator := new(service.MockTokenGenerator)
+			passwordHasher := new(service.MockPasswordHasher)
+			userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+			ctx := context.Background()
+			id, _ := primitive.ObjectIDFromHex("1")
+			user := &domain.User{Username: tc.username, Password: tc.password, UserId: id}
 
-	assert.NoError(t, err)
-	assert.Equal(t, expected, actual)
+			switch tc.expectedErr {
+			case "username":
+				userRepo.On("CheckUsername", ctx, tc.username).Return(nil, errs.UsernameInvalid)
+			case "password":
+				userRepo.On("CheckUsername", ctx, tc.username).Return(user, nil)
+				passwordHasher.On("ComparePassword", ctx, tc.password, tc.password).Return(errs.PasswordInvalid)
+			default:
+				userRepo.On("CheckUsername", ctx, tc.username).Return(user, nil)
+				tokenGenerator.On("GenerateToken", ctx, tc.username, user.UserId).Return(tc.expected)
+				passwordHasher.On("ComparePassword", ctx, tc.password, tc.password).Return(nil)
+				userRepo.On("UpdateUser", ctx, domain.User{UserId: id, Token: tc.expected.RefreshToken}).Return(nil)
+			}
+
+			actual, err := userService.Login(ctx, tc.username, tc.password)
+
+			switch tc.expectedErr {
+			case "username":
+				assert.ErrorIs(t, err, errs.UsernameInvalid)
+				assert.Nil(t, actual)
+			case "password":
+				assert.ErrorIs(t, err, errs.PasswordInvalid)
+			default:
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expected, actual)
+			}
+		})
+	}
+
 }
 
 func TestRegister(t *testing.T) {
@@ -119,10 +150,13 @@ func TestChangePassword(t *testing.T) {
 
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
-	userId := "1"
-	oldPass := "1"
-	newPass := "2"
-	userRepo.On("ChangePassword", ctx, userId, oldPass, newPass).Return(nil)
+	userId, _ := primitive.ObjectIDFromHex("1")
+	oldPass := "12345678"
+	newPass := "12345678"
+	passwordHasher.On("HashPassword", ctx, oldPass).Return([]byte(oldPass))
+	userRepo.On("CheckPassword", ctx, oldPass).Return(nil)
+	passwordHasher.On("HashPassword", ctx, newPass).Return([]byte(newPass))
+	userRepo.On("ChangePassword", ctx, userId, newPass).Return(nil)
 	actual := userService.ChangePassword(ctx, userId, oldPass, newPass)
 
 	assert.NoError(t, nil)
@@ -189,7 +223,7 @@ func TestGetCart(t *testing.T) {
 	carts = append(carts, cart)
 	expected := carts
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 
 	mockProductService.On("CheckAmount", ctx, id).Return(int(12), nil)
 	userRepo.On("GetCart", ctx, userId).Return(expected)
@@ -211,7 +245,7 @@ func TestAddToCart(t *testing.T) {
 	productId := "1"
 	primitiveProductId, _ := primitive.ObjectIDFromHex(productId)
 	product := domain.Cart{ProductName: "Cupid", Amount: 1}
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 
 	userRepo.On("AddtoCart", ctx, product, userId).Return(nil)
 	productService.On("CheckAmount", ctx, primitiveProductId).Return(1)
@@ -232,7 +266,7 @@ func TestInCreaseCartProduct(t *testing.T) {
 
 	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	productId := primitive.NewObjectID()
 	userRepo.On("IncreaseCartProduct", ctx, userId, productId).Return(nil)
 
@@ -252,7 +286,7 @@ func TestDeCreaseCartProduct(t *testing.T) {
 	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
 
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	productId := primitive.NewObjectID()
 	userRepo.On("DecreaseCartProduct", ctx, userId, productId).Return(nil)
 
@@ -272,7 +306,7 @@ func TestDeleteItemInCart(t *testing.T) {
 	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	productId := primitive.NewObjectID()
 	userRepo.On("DeleteItemInCart", ctx, userId, productId).Return(nil)
 
@@ -293,7 +327,7 @@ func TestClearCart(t *testing.T) {
 
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
-	userId := "1"
+	userId, _ := primitive.ObjectIDFromHex("1")
 	userRepo.On("ClearCart", ctx, userId).Return(nil)
 
 	actual := userService.ClearCart(ctx, userId)

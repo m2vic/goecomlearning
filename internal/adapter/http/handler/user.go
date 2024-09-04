@@ -7,6 +7,7 @@ import (
 	"golearning/internal/adapter/http/dto"
 	"golearning/internal/core/domain"
 	"golearning/internal/core/port"
+	errs "golearning/internal/error"
 	"log"
 	"os"
 	"time"
@@ -22,10 +23,12 @@ type UserHandler struct {
 	userService     port.UserService
 	orderService    port.OrderService
 	checkoutService port.CheckoutService
+	EmailService    port.EmailService
+	cryptoService   port.CryptoService
 }
 
-func NewUserHandler(userService port.UserService, orderService port.OrderService, checkoutService port.CheckoutService) *UserHandler {
-	return &UserHandler{userService: userService, orderService: orderService, checkoutService: checkoutService}
+func NewUserHandler(userService port.UserService, orderService port.OrderService, checkoutService port.CheckoutService, emailservice port.EmailService, cryptoService port.CryptoService) *UserHandler {
+	return &UserHandler{userService: userService, orderService: orderService, checkoutService: checkoutService, EmailService: emailservice, cryptoService: cryptoService}
 }
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
@@ -170,7 +173,7 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(200)
 }
-func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
+func (h *UserHandler) ResetPasswordLink(c *fiber.Ctx) error {
 	req := dto.EmailRequest{}
 	err := c.BodyParser(&req)
 	if err != nil {
@@ -185,16 +188,44 @@ func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	newPassword, err := h.userService.ResetPassword(ctx, req.Email)
+	_, err = h.userService.CheckEmail(ctx, req.Email)
+	if err != nil {
+		return errs.EmailNotFound
+	}
+	//have to set this link to an email but have to encrypt
+	encodeEmail, err := h.cryptoService.Encrypt(req.Email)
+	if err != nil {
+		return err
+	}
+	err = h.EmailService.SetResetPasswordLink(req.Email, encodeEmail)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(500)
+	}
+	return c.SendStatus(200)
+}
+func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
+	email := c.Params("email")
+	if email != "" {
+		c.SendStatus(400)
+	}
+	decodeEmail, err := h.cryptoService.Decrypt(email)
+	if err != nil {
+		return err
+	}
+	//where to placing crypto service? // have to decrypt
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	newPassword, err := h.userService.ResetPassword(ctx, decodeEmail)
 	if err != nil {
 		return c.Status(400).SendString("email doesn't exist")
 	}
 
-	err = resetPasswordEmail(req.Email, newPassword)
+	err = h.EmailService.NewPasswordNotify(decodeEmail, newPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return c.SendStatus(200)
+	return c.Status(200).SendString("Password Reset!")
 
 }
 

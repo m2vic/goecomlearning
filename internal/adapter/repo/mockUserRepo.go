@@ -37,8 +37,8 @@ func (m *MockUserRepo) CheckUsername(ctx context.Context, username string) (*dom
 	return args.Get(0).(*domain.User), nil
 }
 
-func (m *MockUserRepo) ResetPassword(ctx context.Context, email string) (string, error) {
-	args := m.Called(ctx, email)
+func (m *MockUserRepo) ResetPassword(ctx context.Context, email, randomPass string) (string, error) {
+	args := m.Called(ctx, email, randomPass)
 	return args.String(0), nil
 }
 func (m *MockUserRepo) ChangePassword(ctx context.Context, userId primitive.ObjectID, newPassword string) error {

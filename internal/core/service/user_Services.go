@@ -51,11 +51,12 @@ func (s *UserService) Register(ctx context.Context, user domain.User) error {
 	password := user.Password
 	email := user.Email
 	result, err := s.userRepo.CheckUsername(ctx, username)
-	if err != nil {
-		return err
-	}
-	if result.Username == username {
+
+	if result != nil && result.Username == username {
 		return errs.UserAlreadyExist
+	}
+	if err != nil && err != mongo.ErrNoDocuments {
+		return err
 	}
 	emailExist, err := s.userRepo.CheckEmail(ctx, email)
 	if err != nil {

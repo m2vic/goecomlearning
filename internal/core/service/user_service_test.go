@@ -20,7 +20,8 @@ func TestGetUser(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	expected := &domain.User{FirstName: "BOB", LastName: "CALLAWAY"}
 	ctx := context.Background()
@@ -53,7 +54,8 @@ func TestLogin(t *testing.T) {
 			productService := service.NewProductService(productRepo, productCached, userRepo)
 			tokenGenerator := new(service.MockTokenGenerator)
 			passwordHasher := new(service.MockPasswordHasher)
-			userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+			passwordGenerator := new(service.MockPasswordGenerator)
+			userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 			ctx := context.Background()
 			id, _ := primitive.ObjectIDFromHex("1")
 			user := &domain.User{Username: tc.username, Password: tc.password, UserId: id}
@@ -95,7 +97,8 @@ func TestRegister(t *testing.T) {
 	productService := service.NewProductService(productRepo, productCached, userRepo)
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	ctx := context.Background()
 
@@ -122,9 +125,8 @@ func TestUpdateUser(t *testing.T) {
 	productService := service.NewProductService(productRepo, productCached, userRepo)
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
-
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
-
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
 
@@ -146,7 +148,8 @@ func TestChangePassword(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
@@ -170,13 +173,15 @@ func TestResetPassword(t *testing.T) {
 	productService := service.NewProductService(productRepo, productCached, userRepo)
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
-
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	ctx := context.Background()
 	email := "123"
 	userRepo.On("CheckEmail", ctx, email).Return(false)
-	userRepo.On("ResetPassword", ctx, email).Return("OK")
+	passwordGenerator.On("RandomPassword").Return("123")
+	passwordHasher.On("HashPassword", ctx, "123").Return([]byte("hash"))
+	userRepo.On("ResetPassword", ctx, email, "hash").Return("OK")
 
 	actual, err := userService.ResetPassword(ctx, email)
 
@@ -191,7 +196,8 @@ func TestRefreshToken(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 	ctx := context.Background()
 	id, _ := primitive.ObjectIDFromHex("1")
 	refreshToken := "aeiou"
@@ -210,11 +216,12 @@ func TestGetCart(t *testing.T) {
 	userRepo := new(repo.MockUserRepo)
 	//productCached := new(repo.MockProductCached)
 	//productRepo := new(repo.MockProductRepo)
-	mockProductService := new(service.MockProductService)
+	productService := new(service.MockProductService)
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, mockProductService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	productId := "123456789012345678901234"
 	id, _ := primitive.ObjectIDFromHex(productId)
@@ -225,7 +232,7 @@ func TestGetCart(t *testing.T) {
 	ctx := context.Background()
 	userId, _ := primitive.ObjectIDFromHex("1")
 
-	mockProductService.On("CheckAmount", ctx, id).Return(int(12), nil)
+	productService.On("CheckAmount", ctx, id).Return(int(12), nil)
 	userRepo.On("GetCart", ctx, userId).Return(expected)
 
 	actual, err := userService.GetCart(ctx, userId)
@@ -240,7 +247,8 @@ func TestAddToCart(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 	ctx := context.Background()
 	productId := "1"
 	primitiveProductId, _ := primitive.ObjectIDFromHex(productId)
@@ -264,7 +272,8 @@ func TestInCreaseCartProduct(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 	ctx := context.Background()
 	userId, _ := primitive.ObjectIDFromHex("1")
 	productId := primitive.NewObjectID()
@@ -283,7 +292,8 @@ func TestDeCreaseCartProduct(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	ctx := context.Background()
 	userId, _ := primitive.ObjectIDFromHex("1")
@@ -303,7 +313,8 @@ func TestDeleteItemInCart(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()
 	userId, _ := primitive.ObjectIDFromHex("1")
@@ -323,7 +334,8 @@ func TestClearCart(t *testing.T) {
 	tokenGenerator := new(service.MockTokenGenerator)
 	passwordHasher := new(service.MockPasswordHasher)
 
-	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher)
+	passwordGenerator := new(service.MockPasswordGenerator)
+	userService := service.NewUserService(userRepo, productService, tokenGenerator, passwordHasher, passwordGenerator)
 
 	//expected := &domain.Token{AccessToken: "access", RefreshToken: "refresh"}
 	ctx := context.Background()

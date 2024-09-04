@@ -65,8 +65,10 @@ func main() {
 	passwordHasher := service.PasswordHasher{}
 	passwordGenerator := service.PasswordGenerator{}
 	userService := service.NewUserService(userRepo, productService, &tokenGenerator, &passwordHasher, &passwordGenerator)
-	checkoutService := service.NewCheckoutService(orderService, *stripeService, productService, userService)
-	userHandler := handler.NewUserHandler(userService, orderService, checkoutService)
+	checkoutService := service.NewCheckoutService(orderService, stripeService, productService, userService)
+	CryptoService := service.NewCryptoService([]byte("1234567890123456"))
+	emailService := service.NewEmailService()
+	userHandler := handler.NewUserHandler(userService, orderService, checkoutService, emailService, CryptoService)
 	productHandler := handler.NewProductHandler(*productService)
 
 	server.Start(userHandler, productHandler)

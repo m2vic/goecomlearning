@@ -48,8 +48,13 @@ func (r *MongoUserRepo) CheckUsername(ctx context.Context, username string) (*do
 	result := domain.User{}
 	filter := bson.M{"username": username}
 	err := r.col.FindOne(context.TODO(), filter).Decode(&result)
-	if err == mongo.ErrNoDocuments {
-		return nil, err
+	if err != nil {
+
+		if err == mongo.ErrNoDocuments {
+			return nil, err
+		} else {
+			return nil, err
+		}
 	}
 	return &result, nil
 }

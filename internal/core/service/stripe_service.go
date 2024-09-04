@@ -17,7 +17,7 @@ func NewStripeService(stripeKey string) *StripeService {
 	return &StripeService{StripeKey: stripeKey}
 }
 
-func (s StripeService) CreateSession(req domain.ProductList) (*stripe.CheckoutSession, error) {
+func (s *StripeService) CreateSession(req domain.ProductList) (*stripe.CheckoutSession, error) {
 	url := os.Getenv("SUCCESSURL")
 	stripe.Key = s.StripeKey
 	list := req.ProductList

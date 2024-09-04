@@ -68,3 +68,7 @@ func (m *MockUserService) GenerateToken(ctx context.Context, username string, id
 	args := m.Called(ctx, username, id)
 	return args.Get(0).(*domain.Token), nil
 }
+func (m *MockUserService) CheckEmail(ctx context.Context, email string) (string, error) {
+	args := m.Called(ctx, email)
+	return args.String(0), nil
+}

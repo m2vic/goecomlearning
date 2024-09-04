@@ -67,10 +67,6 @@ func Authenticate(Token interface{}) (*jwt.Token, error) {
 }
 
 func registerNotification(receiverEmail string) error {
-	//env := godotenv.Load()
-	//if env != nil {
-	//	fmt.Println("fail to load env")
-	//}
 	sender := os.Getenv("EMAILSENDER")
 	smtp := os.Getenv("SMTP")
 	smtpport := os.Getenv("SMTPPORT")
@@ -98,10 +94,6 @@ func registerNotification(receiverEmail string) error {
 }
 
 func resetPasswordEmail(receiverEmail, newPassword string) error {
-	//env := godotenv.Load()
-	//if env != nil {
-	//	fmt.Println("fail to load env")
-	//}
 	sender := os.Getenv("EMAILSENDER")
 	smtp := os.Getenv("SMTP")
 	smtpport := os.Getenv("SMTPPORT")
@@ -113,6 +105,35 @@ func resetPasswordEmail(receiverEmail, newPassword string) error {
 	subject := "Reset Password"
 
 	text := fmt.Sprintf("Hello, System generate a temporary password for you, Sign in to change your password as you wish<br><p>%s<p>", newPassword)
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", sender)
+	m.SetHeader("To", receiverEmail)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", text)
+
+	d := gomail.NewDialer(smtp, port, sender, emailPassword)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("fail to dial and send:%w", err)
+	}
+	return nil
+}
+
+func sendLinkViaEmail(receiverEmail string) error {
+	link := fmt.Sprintf("http://localhost:8080/resetpassword/%s", receiverEmail)
+	sender := os.Getenv("EMAILSENDER")
+	smtp := os.Getenv("SMTP")
+	smtpport := os.Getenv("SMTPPORT")
+	port, err := strconv.Atoi(smtpport)
+	if err != nil {
+		return fmt.Errorf("fail to convert smtpport to int")
+	}
+	emailPassword := os.Getenv("EMAILPASSWORD")
+	subject := "Link to Reset Password"
+
+	text := fmt.Sprintf("Hello, Click the link here to reset your password, You gonna received a new Password after clicking this<a>%s<a>", link)
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", sender)
